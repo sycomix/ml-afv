@@ -40,10 +40,7 @@ class ResBlockGpre(nn.Module):
 class ResBlockDpre(nn.Module):
     def __init__(self, ndf, down=False, first=False):
         super(ResBlockDpre, self).__init__()
-        if down:
-            pool = nn.AvgPool2d(2)
-        else:
-            pool = nn.Sequential()
+        pool = nn.AvgPool2d(2) if down else nn.Sequential()
         if first:
             first_relu = nn.Sequential()
             nin = 3

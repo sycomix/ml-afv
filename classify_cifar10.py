@@ -114,8 +114,7 @@ def get_feat(data, netD, mean, var):
     output = netD(data)
     grad = torch.autograd.grad([output.mean()], paramsD)
     grad = flatten(grad, opt.sample)
-    feat = (grad - mean ) / (var.sqrt() + 1e-6)
-    return feat
+    return (grad - mean ) / (var.sqrt() + 1e-6)
 
 clf = Clf(nparams, opt).to(device)
 optimizer = optim.Adam(clf.parameters(), lr=opt.lr, weight_decay=0)
@@ -128,9 +127,9 @@ def criterion(pred, labels):
         
 lr_sched = optim.lr_scheduler.MultiStepLR(optimizer, [50, 100, 150], 0.5)
 print('Starting training....')
+avg_loss = 0
 for epoch in range(200):
     lr_sched.step()
-    avg_loss = 0
     avg_acc = 0
     images = []
     labels = []

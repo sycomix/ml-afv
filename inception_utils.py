@@ -131,7 +131,7 @@ def sqrt_newton_schulz(A, numIters, dtype=None):
     Y = A.div(normA.view(batchSize, 1, 1).expand_as(A));
     I = torch.eye(dim,dim).view(1, dim, dim).repeat(batchSize,1,1).type(dtype)
     Z = torch.eye(dim,dim).view(1, dim, dim).repeat(batchSize,1,1).type(dtype)
-    for i in range(numIters):
+    for _ in range(numIters):
       T = 0.5*(3.0*I - Z.bmm(Y))
       Y = Y.bmm(T)
       Z = T.bmm(Z)
@@ -177,8 +177,7 @@ def numpy_calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
   # Product might be almost singular
   covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
   if not np.isfinite(covmean).all():
-    msg = ('fid calculation produces singular product; '
-           'adding %s to diagonal of cov estimates') % eps
+    msg = f'fid calculation produces singular product; adding {eps} to diagonal of cov estimates'
     print(msg)
     offset = np.eye(sigma1.shape[0]) * eps
     covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
@@ -188,13 +187,12 @@ def numpy_calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
     print('wat')
     if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
       m = np.max(np.abs(covmean.imag))
-      raise ValueError('Imaginary component {}'.format(m))
+      raise ValueError(f'Imaginary component {m}')
     covmean = covmean.real  
 
   tr_covmean = np.trace(covmean) 
 
-  out = diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2 * tr_covmean
-  return out
+  return diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2 * tr_covmean
 
 
 def torch_calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
@@ -225,10 +223,9 @@ def torch_calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
 
   diff = mu1 - mu2
   # Run 50 itrs of newton-schulz to get the matrix sqrt of sigma1 dot sigma2
-  covmean = sqrt_newton_schulz(sigma1.mm(sigma2).unsqueeze(0), 50).squeeze()  
-  out = (diff.dot(diff) +  torch.trace(sigma1) + torch.trace(sigma2)
-         - 2 * torch.trace(covmean))
-  return out
+  covmean = sqrt_newton_schulz(sigma1.mm(sigma2).unsqueeze(0), 50).squeeze()
+  return (diff.dot(diff) + torch.trace(sigma1) + torch.trace(sigma2) -
+          2 * torch.trace(covmean))
 
 
 # Calculate Inception Score mean + std given softmax'd logits and number of splits
@@ -276,8 +273,8 @@ def prepare_inception_metrics(dataset, parallel, no_fid=False):
   # the script will crash here if it cannot find the Inception moments.
   # By default, remove the "hdf5" from dataset
   dataset = dataset.strip('_hdf5')
-  data_mu = np.load(dataset+'_inception_moments.npz')['mu']
-  data_sigma = np.load(dataset+'_inception_moments.npz')['sigma']
+  data_mu = np.load(f'{dataset}_inception_moments.npz')['mu']
+  data_sigma = np.load(f'{dataset}_inception_moments.npz')['sigma']
   # Load network
   net = load_inception_net(parallel)
   def get_inception_metrics(sample, num_inception_images, num_splits=10, 
@@ -307,4 +304,5 @@ def prepare_inception_metrics(dataset, parallel, no_fid=False):
     # Delete mu, sigma, pool, logits, and labels, just in case
     del mu, sigma, pool, logits, labels
     return IS_mean, IS_std, FID
+
   return get_inception_metrics

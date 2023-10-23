@@ -76,7 +76,7 @@ else:
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
-    
+
 if opt.dataset == 'cifar10':
     dataset_train = dset.CIFAR10(root=opt.dataroot, train=True, download=True, 
                                    transform=transform)
@@ -129,7 +129,7 @@ lr_sched_g = optim.lr_scheduler.StepLR(optimizerG, step_size=50, gamma=0.8)
 paramsD = [p for p in netD.parameters() if p.requires_grad]
 g_label = 0
 nupdates = 0
-for epoch in range(10**6):
+for _ in range(10**6):
     # lr_sched_d.step()
     # lr_sched_g.step()
     if nupdates >= opt.niter:
@@ -180,9 +180,7 @@ for epoch in range(10**6):
                 break
 
         if nupdates % opt.printevery == 0:
-            vutils.save_image(real_cpu,
-                    '%s/real_samples.png' % opt.outf,
-                    normalize=True)
+            vutils.save_image(real_cpu, f'{opt.outf}/real_samples.png', normalize=True)
             with torch.no_grad():
                 fake = netG(fixed_noise)
             vutils.save_image(fake.detach(),
@@ -218,12 +216,12 @@ for epoch in range(10**6):
                     if (i + 1) * opt.batchSize >= 512:
                         break
                 real_val = torch.cat(real_val, dim=0)
-                if 'fisher' in monitor_list:
-                    fsim_train, d_train, d_fake = fisher_sim(netD, paramsD, real_train, fake)
-                    fsim_val, d_val, d_fake = fisher_sim(netD, paramsD, real_val, fake)
-                if 'fid' in monitor_list:
-                    fid_train = FID_score(real_train, fake)
-                    fid_val = FID_score(real_val, fake)
+            if 'fisher' in monitor_list:
+                fsim_train, d_train, d_fake = fisher_sim(netD, paramsD, real_train, fake)
+                fsim_val, d_val, d_fake = fisher_sim(netD, paramsD, real_val, fake)
+            if 'fid' in monitor_list:
+                fid_train = FID_score(real_train, fake)
+                fid_val = FID_score(real_val, fake)
             if 'IS' in monitor_list:
                 ISmean, ISstd = inception_score(dataloader_IS(netG_avg, device, opt.nz, 64))
             print('============ \n fisher sim train %.4f fisher sim val %.4f inception score %.4f train fid %.4f val fid %.4f \n=================' %
